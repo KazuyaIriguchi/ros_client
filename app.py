@@ -70,11 +70,19 @@ def main():
     """ROSクライアントWebUIのメイン関数"""
     st.title('ROS Client Web UI')
 
+    if "master_ip" not in st.session_state:
+        st.session_state["master_ip"] = "localhost"
+
     # 接続先PCのIPアドレスを入力させる
-    master_ip = st.sidebar.text_input("ROS Master IP address:", value="localhost")
+    master_ip = st.sidebar.text_input("ROS Master IP address:", value=st.session_state["master_ip"])
+
+    # ROS_MASTER_URIが変更された場合、それを更新
+    if master_ip != st.session_state["master_ip"]:
+        os.environ["ROS_MASTER_URI"] = f"http://{master_ip}:11311"
+        st.session_state["master_ip"] = master_ip
+        st.experimental_rerun()
 
     # ROS_MASTER_URIを設定
-    os.environ["ROS_MASTER_URI"] = f"http://{master_ip}:11311"
     st.sidebar.text("ROS_MASTER_URI set to: " + os.environ["ROS_MASTER_URI"])
 
     # ROS Parameters
