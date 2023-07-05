@@ -2,7 +2,9 @@ import streamlit as st
 import rospy
 import threading
 import rosservice
-from std_msgs.msg import String
+import importlib
+import time
+
 
 def get_rosparams():
     return rospy.get_param_names()
@@ -13,6 +15,9 @@ def get_rostopics():
 def get_rosservices():
     # Use rosservice module to get a list of services
     return rosservice.get_service_list()
+
+def callback(msg, callback_container):
+    callback_container.append(msg)
 
 threading.Thread(target=lambda: rospy.init_node('streamlit_ros_client', disable_signals=True)).start()
 
@@ -28,19 +33,39 @@ def main():
 
     # ROS Topics
     st.subheader("ROS Topics")
-    topics = [t[0] for t in get_rostopics()]
-    selected_topic = st.selectbox("Select Topic for Publishing (std_msgs/String)", topics)
+    topics = {t[0]: t[1] for t in get_rostopics()}
+    selected_topic = st.selectbox("Select Topic for Subscribing", list(topics.keys()))
     if selected_topic:
-        message = st.text_input("Enter message to publish:")
-        if st.button("Publish to Topic"):
-            publisher = rospy.Publisher(selected_topic, String, queue_size=10)
-            publisher.publish(message)
-            st.success("Message published.")
+        if st.button("Receive from Topic"):
+            message_type = topics[selected_topic]
+            MsgClass = import_message_type(message_type)
+
+            # Container to store messages received by callback
+            callback_container = []
+
+            subscriber = rospy.Subscriber(selected_topic, MsgClass, callback, callback_container)
+            st.text("Waiting for messages...")
+
+            timeout = 5.0  # 5 seconds timeout
+            start_time = time.time()
+
+            # Wait until a message is received or timeout
+            while not callback_container and time.time() - start_time < timeout:
+                pass
+
+            subscriber.unregister()
+
+            if callback_container:
+                for msg in callback_container:
+                    st.write(f"Received message: {msg}")
+            else:
+                st.warning("No message received within the timeout period.")
 
     # ROS Services
     st.subheader("ROS Services")
     services = get_rosservices()
     st.write(services)
+
 
 if __name__ == '__main__':
     main()
