@@ -1,52 +1,46 @@
 import streamlit as st
-import subprocess
-
-def run_command(command):
-    """Run a shell command and return the output."""
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-    output, error = process.communicate()
-    return output.decode("utf-8")
+import rospy
+import threading
+import rosservice
+from std_msgs.msg import String
 
 def get_rosparams():
-    """Get list of ROS parameters"""
-    output = run_command("rosparam list")
-    return output.splitlines()
+    return rospy.get_param_names()
 
 def get_rostopics():
-    """Get list of ROS topics"""
-    output = run_command("rostopic list")
-    return output.splitlines()
+    return rospy.get_published_topics()
 
 def get_rosservices():
-    """Get list of ROS services"""
-    output = run_command("rosservice list")
-    return output.splitlines()
+    # Use rosservice module to get a list of services
+    return rosservice.get_service_list()
 
-# Streamlit UI
-st.title("ROS Client Tool")
+threading.Thread(target=lambda: rospy.init_node('streamlit_ros_client', disable_signals=True)).start()
 
-# ROS Parameters
-st.subheader("Parameters")
-params = get_rosparams()
-selected_param = st.selectbox("Select Parameter", params)
-if st.button("Get Parameter Value"):
-    # Get and display the selected parameter value
-    command = f"rosparam get {selected_param}"
-    output = run_command(command)
-    st.write(f"Parameter Value: {output}")
+def main():
+    st.title('ROS Client Web UI')
 
-# ROS Topics
-st.subheader("Topics")
-topics = get_rostopics()
-selected_topic = st.selectbox("Select Topic", topics)
-if st.button("Publish to Topic"):
-    # Publish to the selected topic here (you'll need to implement message publishing based on the topic type)
-    pass
+    # ROS Parameters
+    st.subheader("ROS Parameters")
+    params = get_rosparams()
+    selected_param = st.selectbox("Select Parameter", params)
+    if selected_param:
+        st.write(f"Value: {rospy.get_param(selected_param)}")
 
-# ROS Services
-st.subheader("Services")
-services = get_rosservices()
-selected_service = st.selectbox("Select Service", services)
-if st.button("Call Service"):
-    # Call the selected service here (you'll need to implement service calling based on the service type)
-    pass
+    # ROS Topics
+    st.subheader("ROS Topics")
+    topics = [t[0] for t in get_rostopics()]
+    selected_topic = st.selectbox("Select Topic for Publishing (std_msgs/String)", topics)
+    if selected_topic:
+        message = st.text_input("Enter message to publish:")
+        if st.button("Publish to Topic"):
+            publisher = rospy.Publisher(selected_topic, String, queue_size=10)
+            publisher.publish(message)
+            st.success("Message published.")
+
+    # ROS Services
+    st.subheader("ROS Services")
+    services = get_rosservices()
+    st.write(services)
+
+if __name__ == '__main__':
+    main()
