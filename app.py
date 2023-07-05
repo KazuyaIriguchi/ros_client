@@ -7,30 +7,66 @@ import time
 
 
 def get_rosparams():
+    """ROSパラメータのリストを取得
+
+    Returns:
+        list: ROSパラメータのリスト
+    """
     return rospy.get_param_names()
 
 def get_rostopics():
+    """ROSトピックのリストを取得
+
+    Returns:
+        dict: トピック名をキー、メッセージ型を値とする辞書
+    """
     return rospy.get_published_topics()
 
 def get_rosservices():
+    """ROSサービスのリストを取得
+
+    Returns:
+        list: ROSサービスのリスト
+    """
     return rosservice.get_service_list()
 
 def import_message_type(message_type):
+    """文字列定義に基づいてメッセージ型をインポートする
+
+    Args:
+        message_type (str): 'pkg/Message'形式のメッセージ型
+
+    Returns:
+        Messageクラス
+    """
     pkg, msg = message_type.split('/')
     module = importlib.import_module(pkg + '.msg')
     return getattr(module, msg)
 
 def import_service_type(service_type):
+    """文字列定義に基づいてサービス型をインポートする
+
+    Args:
+        service_type (str): 'pkg/Service'形式のサービス型
+
+    Returns:
+        Serviceクラス
+    """
     pkg, srv = service_type.split('/')
     module = importlib.import_module(pkg + '.srv')
     return getattr(module, srv)
 
 def callback(msg, callback_container):
+    """ROSサブスクライバのコールバック関数
+
+    Args:
+        msg : ROSメッセージ
+        callback_container (list): 受信したメッセージを格納するコンテナ
+    """
     callback_container.append(msg)
 
-threading.Thread(target=lambda: rospy.init_node('streamlit_ros_client', disable_signals=True)).start()
-
 def main():
+    """ROSクライアントWebUIのメイン関数"""
     st.title('ROS Client Web UI')
 
     # ROS Parameters
@@ -98,4 +134,5 @@ def main():
 
 
 if __name__ == '__main__':
+    threading.Thread(target=lambda: rospy.init_node('streamlit_ros_client', disable_signals=True)).start()
     main()
