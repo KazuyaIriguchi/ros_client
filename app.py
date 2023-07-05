@@ -13,7 +13,6 @@ def get_rostopics():
     return rospy.get_published_topics()
 
 def get_rosservices():
-    # Use rosservice module to get a list of services
     return rosservice.get_service_list()
 
 def import_message_type(message_type):
@@ -50,16 +49,14 @@ def main():
             message_type = topics[selected_topic]
             MsgClass = import_message_type(message_type)
 
-            # Container to store messages received by callback
             callback_container = []
 
             subscriber = rospy.Subscriber(selected_topic, MsgClass, callback, callback_container)
             st.text("Waiting for messages...")
 
-            timeout = 5.0  # 5 seconds timeout
+            timeout = 5.0
             start_time = time.time()
 
-            # Wait until a message is received or timeout
             while not callback_container and time.time() - start_time < timeout:
                 pass
 
