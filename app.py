@@ -4,6 +4,7 @@ import threading
 import rosservice
 import importlib
 import time
+import os
 
 
 def get_rosparams():
@@ -68,6 +69,13 @@ def callback(msg, callback_container):
 def main():
     """ROSクライアントWebUIのメイン関数"""
     st.title('ROS Client Web UI')
+
+    # 接続先PCのIPアドレスを入力させる
+    master_ip = st.sidebar.text_input("ROS Master IP address:", value="localhost")
+
+    # ROS_MASTER_URIを設定
+    os.environ["ROS_MASTER_URI"] = f"http://{master_ip}:11311"
+    st.sidebar.text("ROS_MASTER_URI set to: " + os.environ["ROS_MASTER_URI"])
 
     # ROS Parameters
     st.subheader("ROS Parameters")
