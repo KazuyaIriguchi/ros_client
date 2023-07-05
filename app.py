@@ -21,6 +21,11 @@ def import_message_type(message_type):
     module = importlib.import_module(pkg + '.msg')
     return getattr(module, msg)
 
+def import_service_type(service_type):
+    pkg, srv = service_type.split('/')
+    module = importlib.import_module(pkg + '.srv')
+    return getattr(module, srv)
+
 def callback(msg, callback_container):
     callback_container.append(msg)
 
@@ -69,7 +74,30 @@ def main():
     # ROS Services
     st.subheader("ROS Services")
     services = get_rosservices()
-    st.write(services)
+    selected_service = st.selectbox("Select Service for Calling", services)
+    if selected_service:
+        service_type = rosservice.get_service_type(selected_service)
+        SrvClass = import_service_type(service_type)
+
+        st.text(f"Service Type: {service_type}")
+
+        # Parse the service arguments
+        srv_args = SrvClass._request_class.__slots__
+        srv_args_dict = {}
+
+        st.text("Enter the service arguments:")
+        for arg in srv_args:
+            srv_args_dict[arg] = st.text_input(arg)
+
+        if st.button("Call Service"):
+            service_proxy = rospy.ServiceProxy(selected_service, SrvClass)
+
+            try:
+                response = service_proxy(**srv_args_dict)
+                st.write(f"Service Response: {response}")
+
+            except rospy.ServiceException as e:
+                st.error(f"Service call failed: {e}")
 
 
 if __name__ == '__main__':
