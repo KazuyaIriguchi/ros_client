@@ -16,6 +16,11 @@ def get_rosservices():
     # Use rosservice module to get a list of services
     return rosservice.get_service_list()
 
+def import_message_type(message_type):
+    pkg, msg = message_type.split('/')
+    module = importlib.import_module(pkg + '.msg')
+    return getattr(module, msg)
+
 def callback(msg, callback_container):
     callback_container.append(msg)
 
